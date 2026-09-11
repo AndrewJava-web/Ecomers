@@ -1,5 +1,7 @@
 package org.example;
 
+import org.w3c.dom.ls.LSOutput;
+
 import java.util.*;
 
 public class Store {
@@ -20,8 +22,15 @@ public class Store {
             System.out.println("unvalid product id");
             return;
         }
-        if(productById.containsKey(id)){
-            System.out.println("product already exists");
+       Product p1=productById.get(id);
+        if(p1!=null){
+            System.out.println("the product is already in stock");
+            System.out.println("enter quantity");
+            int quantity=in.nextInt();
+            in.nextLine();
+            int quantity1=p1.getQuantity();
+            quantity1+=quantity;
+            p1.setQuantity(quantity1);
             return;
         }
         System.out.println("enter product name");
@@ -94,17 +103,13 @@ public void searchProductById(){
             System.out.println("unvalid product id");
             return;
         }
-
-        for(int i=0;i<products.size();i++){
-            if(products.get(i).getId()==id){
-                System.out.println(products.get(i));
-                found=true;
-                return;
-            }
-        }
-        if(!found){
-            System.out.println("not found the  product id");
-        }
+Optional.ofNullable(productById.get(id))
+        .ifPresentOrElse(p->{
+            System.out.println("the product is found");
+            System.out.println(p);
+        },
+                ()-> System.out.printf("the product is not found")
+                );
 }
 public void showAllCategories(){
         if(categores.isEmpty()){
@@ -190,33 +195,26 @@ public void removeItemFromOrder(){
         System.out.println("enter the id of products");
         int productId=in.nextInt();
         in.nextLine();
-   CartItem item=null;
-   for(CartItem item1:order.getItems()){
-       if(item1.getProduct().getId()==productId){
-           item=item1;
-           return;
-       }
-
-   }
-   if(item==null){
-       System.out.println("unvalid product id");
-       return;
-   }
-   order.removeItem(item);
+ Optional<CartItem>item=order.getItems().stream().filter(i->i.getProduct().getId()==productId).findFirst();
+ if(item.isEmpty()){
+     System.out.println("item not found");
+     return ;
+ }
+ CartItem cartItem=item.get();
+   order.removeItem(cartItem);
    System.out.println("order removed successfully");
 }
 public void displayOrders(){
     System.out.println("enter order id");
     int id=in.nextInt();
     in.nextLine();
-   Order order=orders.get(id);
-   if(order==null){
-        System.out.println("unvalid order id");
-        return;
-   }
-   for(Order o:orders.values()){
-       o.displayOrder();
-   }
+ Optional.ofNullable(orders.get(id))
+         .ifPresentOrElse(order->{
+             System.out.println(order);
+             System.out.println("order has been added successfully");
+         },
+                 ()-> System.out.println("the order not found")
+                 );
 }
 public void addOrderToShipping(){
         System.out.println("enter order id");
@@ -293,27 +291,20 @@ public void searchOrders(){
         System.out.println("enter order id");
         int id=in.nextInt();
         in.nextLine();
-        Order order=orders.get(id);
-        if(order==null){
-            System.out.println("unvalid order id");
-            return;
-        }
-        order.displayOrder();
+    Optional.ofNullable(orders.get(id))
+            .ifPresentOrElse(System.out::println,
+                    () -> System.out.println("order not found"));
 
 }
 public void addReviewToProduct(){
         System.out.println("enter product id");
         int id=in.nextInt();
         in.nextLine();
-        Product product=productById.get(id);
-        if(product==null){
-            System.out.println("unvalid product id");
-            return;
-        }
-        if(reviews.contains(product)){
-            System.out.println("the product has already been reviewed");
-            return;
-        }
+      Optional<Review>existReviw=reviews.stream().filter(review -> review.getOrderId()==id).findFirst();
+      if(existReviw.isEmpty()){
+          System.out.println("the product has been reviwded");
+          return;
+      }
     System.out.println("neter cutomer name");
         String name=in.nextLine();
         System.out.println("neter cutomer description");
@@ -341,7 +332,7 @@ public void removeOfStock(){
             Product product=iterator.next();
             if(product.getQuantity()==0){
                 iterator.remove();
-                products.remove(product.getId());
+                productById.remove(product.getId());
             }
         }
     System.out.println("product removed successfully");
